@@ -3,6 +3,7 @@ var request = require('request');
 var fs = require('fs');
 var ical = require('ical.js');
 var url = require('url');
+const config = require('./config.js');
 
 /*
  * Usage:
@@ -26,14 +27,7 @@ var url = require('url');
  * - cleanup
  */
 
-//
-// Config section
-//
-var testIcalUrl = 'https://www.facebook.com/ical/u.php?uid=123456789&key=AbCdEfGhIjKlMn';
-var tmpFile = 'tmp.ical';
-var userAgentString = 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36';
 
-const PORT = process.env.PORT || 1337;
 //
 // Constants
 //
@@ -42,35 +36,29 @@ var statusParamName = 'status';
 var icalPath = 'calbolit';
 var icalProtocolPrefix = 'webcal://';
 var httpsProtocolPrefix = 'https://';
+const calendarFileName = 'calendar.ics';
 
-//
-// Debug section
-//
-
-var IsDebugMode = true;
-var LogToFile = true;
-var LogFileName = 'calbolit.log';
-var logFile;
+var dbgLogFile;
 
 var LogDbg = function(msg) {
-  if (!IsDebugMode) {
+  if (!config.dbg.debugmode) {
     return;
   }
-  if (LogToFile) {
-    if (!logFile) {
-        logFile = fs.createWriteStream(LogFileName);
+  if (config.dbg.writelog) {
+    if (!dbgLogFile) {
+      dbgLogFile = fs.createWriteStream(config.dbg.logfile);
     }
-    logFile.write(msg + '\n');
+    dbgLogFile.write(msg + '\n');
   }
   console.log('dbg> ' + msg);
 };
 
 var LogErr = function(msg) {
-  if (LogToFile) {
-    if (!logFile) {
-      logFile = fs.createWriteStream(LogFileName);
+  if (config.dbg.writelog) {
+    if (!dbgLogFile) {
+      dbgLogFile = fs.createWriteStream(config.dbg.logfile);
     }
-    logFile.write('err> ' + msg + '\n');
+    dbgLogFile.write('err> ' + msg + '\n');
   }
   console.log('err> ' + msg);
 };
@@ -81,27 +69,22 @@ var LogErr = function(msg) {
 var download = function(url, cb) {
   LogDbg("Donloading: url="+url);
 
-  if (IsDebugMode) {
-    var file = fs.createWriteStream(tmpFile);
-  }
-
-  var data = "";
-  
   // TODO: Add timeout
   // TODO: Limit size
   var options = {
     url: url,
-    headers: {'User-Agent': userAgentString}
+    headers: {'User-Agent': config.app.userAgentString}
   };
-  
+
   request(options, function(error, response, body) {
     // check if response is success
     if (response.statusCode !== 200) {
-        LogErr('Response status=' + response.statusCode);
-        return cb(null, 'Response status is ' + response.statusCode);
+      LogErr('Problem with response: statusCode=' + response.statusCode+'; message=' + response.statusMessage);
+      response.writeHead(response.statusCode, response.statusMessage);
+      return;
     };
-    LogDbg("Download: done. Data.size=" + body.length);
-    cb(body, null);
+    LogDbg("Download done. Data.size=" + body.length);
+    cb(body);
   });
 };
 
@@ -137,13 +120,13 @@ function ProcessICAL(body, onEvent) {
   return vcal;
 }
 
-function SendVCal(response, vcalStr) {
+function SendVCal(response, vcalStr, fileName) {
   var bytesLen = Buffer.byteLength(vcalStr, 'utf8');
   LogDbg("vcalStr.length="+vcalStr.length+"; bytesLen="+bytesLen);
   response.writeHead(200, 
     {
     'Content-Type': 'text/calendar;charset=utf-8',
-    'Content-Disposition': 'attachment;filename=calendar.ics',
+    'Content-Disposition': 'attachment;filename=' + (fileName || calendarFileName),
     'Content-Length': bytesLen
     }
   );
@@ -228,15 +211,12 @@ function HttpHandler(req, res) {
     return true;
   };
 
-  download(icalURL, function(data, errMsg) {
-    if (errMsg) {
-        //
-    }
+  download(icalURL, function(data) {
     var vcal = ProcessICAL(data, FilterEventFunc);
     var vcalStr = vcal.toString();
     SendVCal(res, vcalStr);
   });
 }
 
-LogDbg('Running server on port='+PORT);
-http.createServer(HttpHandler).listen(PORT);
+LogDbg('Running server on port='+config.app.port);
+http.createServer(HttpHandler).listen(config.app.port);
