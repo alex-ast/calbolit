@@ -32,7 +32,7 @@ var httpProtocolPrefix = 'http://';
 // Debug section
 //
 
-var IsDebugMode = false;
+var IsDebugMode = true;
 var LogToFile = false;
 var LogFileName = 'calbolit.log';
 var logFile;
@@ -122,11 +122,11 @@ var download = function(url, cb) {
 
 
 
-function ProcessICAL(body, onlyAccepted) {
+function ProcessICAL(body, onEvent) {
     LogDbg('ProcessICAL, body:');
-    LogDbg('==================================================');
-    LogDbg(body);
-    LogDbg('==================================================');
+    //LogDbg('>>>');
+    //LogDbg(body);
+    //LogDbg('<<<');
 
     var jcal = ical.parse(body);
     var vcal = new ical.Component(jcal);
@@ -141,7 +141,8 @@ function ProcessICAL(body, onlyAccepted) {
         var url = ev.getFirstPropertyValue("url");
         var mystatus = ev.getFirstPropertyValue("partstat");
 
-        if (onlyAccepted && mystatus !== 'ACCEPTED') {
+        var accept = onEvent(ev);
+        if (!accept) {
             LogDbg("Removed: " + summary);
             vevents.splice(i, 1);
             --i;
@@ -157,9 +158,9 @@ function ProcessICAL(body, onlyAccepted) {
 function SendVCal(response, vcalStr) {
     var bytesLen = Buffer.byteLength(vcalStr, 'utf8');
     LogDbg("vcalStr.length="+vcalStr.length+"; bytesLen="+bytesLen);
-    LogDbg(">>>");
-    LogDbg(vcalStr);
-    LogDbg("<<<");
+    //LogDbg(">>>");
+    //LogDbg(vcalStr);
+    //LogDbg("<<<");
     response.writeHead(200, 
     	{
     	'Content-Type': 'text/calendar;charset=utf-8',
@@ -198,13 +199,38 @@ http.createServer(function handler(req, res) {
   
         var reqInfo = url.parse('/?' + myPart, true);
         var onlyAccepted = ('accepted' === reqInfo.query[statusParamName]);
+        var newSummary = reqInfo.query['summary'];
+        var exclude = reqInfo.query['exclude'];
 
         LogDbg('Processing iCal. Only accepted? ' + onlyAccepted + '; URL=' + icalURL);
+        LogDbg('newSummary=' + newSummary + '; exclude='+exclude);
+        
+        var FilterEvent = function(ev) {
+            var summary = ev.getFirstPropertyValue("summary");
+        	if (onlyAccepted) {
+            	var mystatus = ev.getFirstPropertyValue("partstat");
+            	if (mystatus !== 'ACCEPTED') {
+                    LogDbg('Exclude because not accepted: ' + summary);
+            		return false;
+            	};
+        	}
+        	if (exclude) {
+                if (summary.indexOf(exclude) == 0) {
+                    LogDbg('Exclude because summary match: ' + summary);
+                	return false;
+                };
+        	}
+        	if (newSummary) {
+        		ev.updatePropertyWithValue("summary", newSummary);
+        	}
+        	return true;
+        };
+        
         download(icalURL, function(data, errMsg) {
             if (errMsg) {
                 //
             }
-            var vcal = ProcessICAL(data, onlyAccepted);
+            var vcal = ProcessICAL(data, FilterEvent);
             var vcalStr = vcal.toString();
             SendVCal(res, vcalStr);
         });
