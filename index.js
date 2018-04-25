@@ -32,23 +32,31 @@ var httpProtocolPrefix = 'http://';
 // Debug section
 //
 
-var IsDebugMode = true;
+var IsDebugMode = false;
+var LogToFile = false;
 var LogFileName = 'calbolit.log';
 var logFile;
 
 var LogDbg = function(msg) {
-    if (!logFile) {
-        logFile = fs.createWriteStream(LogFileName);
-    }
-    logFile.write(msg + '\n');
+	if (!IsDebugMode) {
+		return;
+	}
+	if (LogToFile) {
+	    if (!logFile) {
+	        logFile = fs.createWriteStream(LogFileName);
+	    }
+	    logFile.write(msg + '\n');
+	}
     console.log('dbg> ' + msg);
 };
 
 var LogErr = function(msg) {
-    if (!logFile) {
-        logFile = fs.createWriteStream(LogFileName);
-    }
-    logFile.write('err> ' + msg + '\n');
+	if (LogToFile) {
+	    if (!logFile) {
+	        logFile = fs.createWriteStream(LogFileName);
+	    }
+	    logFile.write('err> ' + msg + '\n');
+	}
     console.log('err> ' + msg);
 };
 
