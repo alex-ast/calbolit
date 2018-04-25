@@ -18,7 +18,7 @@ var testIcalUrl = 'https://www.facebook.com/ical/u.php?uid=1821253602&key=AQCFyk
 var tmpFile = 'tmp.ical';
 var userAgentString = 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36';
 
-
+const PORT = process.env.PORT || 1337;
 //
 // Constants
 //
@@ -175,4 +175,4 @@ http.createServer(function handler(req, res) {
         res.writeHead(200, {'Content-Type': 'text/plain'});
         res.end('Hello World zzz\n');
     }
-}).listen(1337, '127.0.0.1');
+}).listen(PORT, '127.0.0.1');
