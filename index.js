@@ -181,13 +181,7 @@ http.createServer(function handler(req, res) {
         var onlyAccepted = ('accepted' === reqInfo.query[statusParamName]);
         LogDbg('Processing iCal. Only accepted? ' + onlyAccepted + '; URL=' + icalURL);
 
-        if (IsDebugMode) {
-	        var newSummary = reqInfo.query['summary'];
-	        var exclude = reqInfo.query['exclude'];
-	        LogDbg('newSummary=' + newSummary + '; exclude='+exclude);
-        }
-        
-        var FilterEvent = function(ev) {
+        var FilterEventFunc = function(ev) {
             var summary = ev.getFirstPropertyValue("summary");
         	if (onlyAccepted) {
             	var mystatus = ev.getFirstPropertyValue("partstat");
@@ -196,15 +190,6 @@ http.createServer(function handler(req, res) {
             		return false;
             	};
         	}
-        	if (exclude) {
-                if (summary.indexOf(exclude) == 0) {
-                    LogDbg('Exclude because summary match: ' + summary);
-                	return false;
-                };
-        	}
-        	if (newSummary) {
-        		ev.updatePropertyWithValue("summary", newSummary);
-        	}
         	return true;
         };
         
@@ -212,7 +197,7 @@ http.createServer(function handler(req, res) {
             if (errMsg) {
                 //
             }
-            var vcal = ProcessICAL(data, FilterEvent);
+            var vcal = ProcessICAL(data, FilterEventFunc);
             var vcalStr = vcal.toString();
             SendVCal(res, vcalStr);
         });
