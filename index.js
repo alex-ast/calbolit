@@ -101,14 +101,9 @@ function ProcessICAL(body, onEvent) {
 
   for (var i = 0; i < vevents.length; i++) {
     var ev = vevents[i];
-    var summary = ev.getFirstPropertyValue("summary");
-    var location = ev.getFirstPropertyValue("location");
-    var url = ev.getFirstPropertyValue("url");
-    var mystatus = ev.getFirstPropertyValue("partstat");
-
     var accept = onEvent(ev);
     if (!accept) {
-      LogDbg("Removed: " + summary);
+      LogDbg("Removed: " + ev.getFirstPropertyValue("summary"));
       vevents.splice(i, 1);
       --i;
     }
@@ -153,8 +148,19 @@ function SendAccessDeniedError(response, errMsg) {
   SendError(response, 403, 'Forbidden', errMsg);
 }
 
+function endsWith(str, pattern) {
+  return (str.lastIndexOf(pattern) + pattern.length == str.length);
+}
+
 function IsAllowedHost(hostname) {
-  return true;
+  hostname = hostname.toLowerCase();
+  for (var i = 0; i < config.domains.whitelist.length; i++) {
+    var domain = config.domains.whitelist[i].toLowerCase();
+    if (endsWith(hostname, domain)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function HttpHandler(req, res) {
@@ -191,6 +197,7 @@ function HttpHandler(req, res) {
   
   var remoteURL = url.parse(icalURL);
   if (!IsAllowedHost(remoteURL.hostname)) {
+    LogDbg('Host not allowed. whitelist=' + config.domains.whitelist);
     SendAccessDeniedError(res, 'Hostname not allowed: ' + remoteURL.hostname);
     return;
   }
