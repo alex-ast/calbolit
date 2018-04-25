@@ -13,7 +13,9 @@ auth: {
 dbg: {
   debugmode: process.env.NODE_ENV == 'dev',
   writelog: process.env.NODE_ENV == 'dev',
-  logfile: 'calbolit.log'
+  logfile: 'calbolit.log',
+  // Ouput only this many chars from downloaded/generated data.
+  trimoutput: 100
 },
 };
 

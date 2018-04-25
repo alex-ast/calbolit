@@ -77,13 +77,7 @@ var download = function(url, callback) {
   };
 
   request(options, function(error, response, body) {
-    // check if response is success
-    if (response.statusCode !== 200) {
-      LogErr('Problem with response: statusCode=' + response.statusCode+'; message=' + response.statusMessage);
-      response.writeHead(response.statusCode, response.statusMessage);
-      return;
-    };
-    LogDbg("Download done. Data.size=" + body.length);
+    LogDbg("Download done. statusCode=' + response.statusCode + '; message=' + response.statusMessage + '; Data.size=" + body.length);
     callback(body, response);
   });
 };
@@ -152,6 +146,10 @@ function endsWith(str, pattern) {
   return (str.lastIndexOf(pattern) + pattern.length == str.length);
 }
 
+function startsWith(str, pattern) {
+  return str.indexOf(pattern) === 0;
+}
+
 function IsAllowedHost(hostname) {
   hostname = hostname.toLowerCase();
   for (var i = 0; i < config.domains.whitelist.length; i++) {
@@ -161,6 +159,10 @@ function IsAllowedHost(hostname) {
     }
   }
   return false;
+}
+
+function IsValidVcal(text) {
+  return startsWith(text, 'BEGIN:VCALENDAR') && (text.indexOf('END:VCALENDAR') != -1);
 }
 
 function HttpHandler(req, res) {
@@ -197,12 +199,13 @@ function HttpHandler(req, res) {
   
   var remoteURL = url.parse(icalURL);
   if (!IsAllowedHost(remoteURL.hostname)) {
-    LogDbg('Host not allowed. whitelist=' + config.domains.whitelist);
+    LogDbg('Host not allowed: ' + remoteURL.hostname);
     SendAccessDeniedError(res, 'Hostname not allowed: ' + remoteURL.hostname);
     return;
   }
 
   var reqInfo = url.parse('/?' + myPart, true);
+
   var onlyAccepted = ('accepted' === reqInfo.query[statusParamName]);
   LogDbg('Processing iCal. Only accepted? ' + onlyAccepted + '; URL=' + icalURL);
 
@@ -211,7 +214,7 @@ function HttpHandler(req, res) {
     if (onlyAccepted) {
       var mystatus = ev.getFirstPropertyValue("partstat");
       if (mystatus !== 'ACCEPTED') {
-        LogDbg('Exclude because not accepted: ' + summary);
+        LogDbg('Exclude event because not accepted: ' + summary);
         return false;
       };
     }
@@ -219,6 +222,20 @@ function HttpHandler(req, res) {
   };
 
   download(icalURL, function(data, remoteResponse) {
+    // check if response is success
+    if (remoteResponse.statusCode !== 200) {
+      LogErr('Problem with remote response: statusCode=' + remoteResponse.statusCode+'; message=' + remoteResponse.statusMessage);
+      res.writeHead(remoteResponse.statusCode, remoteResponse.statusMessage);
+      res.end();
+      return;
+    };
+
+    if (!IsValidVcal(data)) {
+      LogErr('Invalid vcal data: >' + data.substring(0, config.dbg.trimoutput) + '<...');
+      res.writeHead(remoteResponse.statusCode, remoteResponse.statusMessage);
+      res.end(data);
+      return;
+    }
 
     var contentHeader = remoteResponse.headers['content-disposition'];
     if (contentHeader) {
