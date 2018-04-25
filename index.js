@@ -32,7 +32,7 @@ var httpProtocolPrefix = 'http://';
 // Debug section
 //
 
-var IsDebugMode = true;
+var IsDebugMode = false;
 var LogToFile = false;
 var LogFileName = 'calbolit.log';
 var logFile;
@@ -88,36 +88,6 @@ var download = function(url, cb) {
         LogDbg("Download: done. Data.size=" + body.length);
         cb(body, null);
     });
-    
-    /*
-    var req = request.get(options);
-
-    // check for request error too
-    req.on('error', function (err) {
-        return cb(null, err.message);
-    });
-
-    if (IsDebugMode) {
-        req.pipe(file);
-    }
-
-    req.on('response', function(response) {
-        // check if response is success
-        if (response.statusCode !== 200) {
-            return cb(null, 'Response status is ' + response.statusCode);
-        }
-
-        response.on('data', function(chunk) {
-          LogDbg("Download: got data chunk, size=" + chunk.length);
-          data += chunk;
-        });
-
-        response.on('end', function() {
-          LogDbg("Download: done. Data.size=" + data.length);
-          cb(data, null);
-        });
-    });
-    */
 };
 
 
@@ -199,11 +169,13 @@ http.createServer(function handler(req, res) {
   
         var reqInfo = url.parse('/?' + myPart, true);
         var onlyAccepted = ('accepted' === reqInfo.query[statusParamName]);
-        var newSummary = reqInfo.query['summary'];
-        var exclude = reqInfo.query['exclude'];
-
         LogDbg('Processing iCal. Only accepted? ' + onlyAccepted + '; URL=' + icalURL);
-        LogDbg('newSummary=' + newSummary + '; exclude='+exclude);
+
+        if (IsDebugMode) {
+	        var newSummary = reqInfo.query['summary'];
+	        var exclude = reqInfo.query['exclude'];
+	        LogDbg('newSummary=' + newSummary + '; exclude='+exclude);
+        }
         
         var FilterEvent = function(ev) {
             var summary = ev.getFirstPropertyValue("summary");
