@@ -22,8 +22,8 @@ const config = require('./config.js');
  * - add auth param so only authorized users can use it
  * - limit the size of calendar being downloaded
  * - (?) only accept 'Content-type: text/calendar'
- * - use the file name from the downloaded data, if present
- * - add config
+ * [x] use the file name from the downloaded data, if present
+ * [x] add config
  * - cleanup
  */
 
@@ -66,7 +66,7 @@ var LogErr = function(msg) {
 //
 //
 //
-var download = function(url, cb) {
+var download = function(url, callback) {
   LogDbg("Donloading: url="+url);
 
   // TODO: Add timeout
@@ -84,7 +84,7 @@ var download = function(url, cb) {
       return;
     };
     LogDbg("Download done. Data.size=" + body.length);
-    cb(body);
+    callback(body, response);
   });
 };
 
@@ -211,10 +211,21 @@ function HttpHandler(req, res) {
     return true;
   };
 
-  download(icalURL, function(data) {
+  download(icalURL, function(data, remoteResponse) {
+
+    var contentHeader = remoteResponse.headers['content-disposition'];
+    if (contentHeader) {
+      const filenamePattern = ';filename=';
+      var n = contentHeader.indexOf(filenamePattern);
+      if (n != -1) {
+        var fileName = contentHeader.substring(n + filenamePattern.length);
+        LogDbg('Using the remote file name: ' + fileName);
+      }
+    }
+
     var vcal = ProcessICAL(data, FilterEventFunc);
     var vcalStr = vcal.toString();
-    SendVCal(res, vcalStr);
+    SendVCal(res, vcalStr, fileName);
   });
 }
 
