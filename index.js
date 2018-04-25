@@ -11,6 +11,16 @@ var url = require('url');
  *  
  */
 
+/*
+ * TODO:
+ * - add auth param so only authorized users can use it
+ * - limit the size of calendar being downloaded
+ * - (?) only accept 'Content-type: text/calendar'
+ * - use the file name from the downloaded data, if present
+ * - add config
+ * - cleanup
+ */
+
 //
 // Config section
 //
