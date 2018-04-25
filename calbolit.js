@@ -173,6 +173,6 @@ http.createServer(function handler(req, res) {
     }
     else {
         res.writeHead(200, {'Content-Type': 'text/plain'});
-        res.end('Hello World zzz\n');
+        res.end('Hello World\n');
     }
-}).listen(PORT, '127.0.0.1');
+}).listen(PORT);
