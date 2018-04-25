@@ -229,5 +229,7 @@ function HttpHandler(req, res) {
   });
 }
 
-LogDbg('Running server on port='+config.app.port);
+if (config.dbg.debugmode) {
+}
+console.log('Running in '+(config.dbg.debugmode ? 'debug' : 'PROD')+' mode. Port=' + config.app.port);
 http.createServer(HttpHandler).listen(config.app.port);

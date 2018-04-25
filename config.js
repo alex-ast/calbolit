@@ -11,8 +11,8 @@ auth: {
   keys: ['70697bc']
 },
 dbg: {
-  debugmode: true,
-  writelog: true,
+  debugmode: process.env.NODE_ENV == 'dev',
+  writelog: process.env.NODE_ENV == 'dev',
   logfile: 'calbolit.log'
 },
 };
