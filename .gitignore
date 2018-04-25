@@ -1,6 +1,6 @@
 calbolit.log
 tmp.html
 tmp.ical
-u1821253602.ics
 node_modules/*
 .settings/*
+*.ics
