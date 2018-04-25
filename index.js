@@ -48,25 +48,25 @@ var LogFileName = 'calbolit.log';
 var logFile;
 
 var LogDbg = function(msg) {
-	if (!IsDebugMode) {
-		return;
-	}
-	if (LogToFile) {
-	    if (!logFile) {
-	        logFile = fs.createWriteStream(LogFileName);
-	    }
-	    logFile.write(msg + '\n');
-	}
+    if (!IsDebugMode) {
+        return;
+    }
+    if (LogToFile) {
+        if (!logFile) {
+            logFile = fs.createWriteStream(LogFileName);
+        }
+        logFile.write(msg + '\n');
+    }
     console.log('dbg> ' + msg);
 };
 
 var LogErr = function(msg) {
-	if (LogToFile) {
-	    if (!logFile) {
-	        logFile = fs.createWriteStream(LogFileName);
-	    }
-	    logFile.write('err> ' + msg + '\n');
-	}
+    if (LogToFile) {
+        if (!logFile) {
+            logFile = fs.createWriteStream(LogFileName);
+        }
+        logFile.write('err> ' + msg + '\n');
+    }
     console.log('err> ' + msg);
 };
 
@@ -92,7 +92,7 @@ var download = function(url, cb) {
     request(options, function(error, response, body) {
         // check if response is success
         if (response.statusCode !== 200) {
-        	LogErr('Response status=' + response.statusCode);
+            LogErr('Response status=' + response.statusCode);
             return cb(null, 'Response status is ' + response.statusCode);
         };
         LogDbg("Download: done. Data.size=" + body.length);
@@ -142,11 +142,11 @@ function SendVCal(response, vcalStr) {
     //LogDbg(vcalStr);
     //LogDbg("<<<");
     response.writeHead(200, 
-    	{
-    	'Content-Type': 'text/calendar;charset=utf-8',
-    	'Content-Disposition': 'attachment;filename=calendar.ics',
-    	'Content-Length': bytesLen
-    	}
+        {
+        'Content-Type': 'text/calendar;charset=utf-8',
+        'Content-Disposition': 'attachment;filename=calendar.ics',
+        'Content-Length': bytesLen
+        }
     );
     response.end(vcalStr);
 }
@@ -183,14 +183,14 @@ http.createServer(function handler(req, res) {
 
         var FilterEventFunc = function(ev) {
             var summary = ev.getFirstPropertyValue("summary");
-        	if (onlyAccepted) {
-            	var mystatus = ev.getFirstPropertyValue("partstat");
-            	if (mystatus !== 'ACCEPTED') {
+            if (onlyAccepted) {
+                var mystatus = ev.getFirstPropertyValue("partstat");
+                if (mystatus !== 'ACCEPTED') {
                     LogDbg('Exclude because not accepted: ' + summary);
-            		return false;
-            	};
-        	}
-        	return true;
+                    return false;
+                };
+            }
+            return true;
         };
         
         download(icalURL, function(data, errMsg) {
