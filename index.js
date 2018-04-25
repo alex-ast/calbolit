@@ -162,6 +162,8 @@ function SendVCal(response, vcalStr) {
     response.end(vcalStr);
 }
 
+LogDbg('Running server on port='+PORT);
+
 http.createServer(function handler(req, res) {
     var reqInfoTmp = url.parse(req.url);
     
