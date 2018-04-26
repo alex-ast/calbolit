@@ -109,11 +109,17 @@ function ProcessICAL(body, onEvent) {
   return vcal;
 }
 
-function SendVCal(response, vcalStr, fileName) {
+function SendVCal(response, vcalStr, fileName, remoteHeaders) {
   var bytesLen = Buffer.byteLength(vcalStr, 'utf8');
   LogDbg("vcalStr.length="+vcalStr.length+"; bytesLen="+bytesLen);
+  
+  var pragmaValue = remoteHeaders && remoteHeaders['pragma'];
+  var cacheControlValue = remoteHeaders && remoteHeaders['cache-control'];
+  
   response.writeHead(200, 
     {
+    'Pragma': pragmaValue || 'no-cache',
+    'Cache-Control': cacheControlValue || 'private, no-cache, no-store, must-revalidate',
     'Content-Type': 'text/calendar;charset=utf-8',
     'Content-Disposition': 'attachment;filename=' + (fileName || calendarFileName),
     'Content-Length': bytesLen
@@ -249,7 +255,7 @@ function HttpHandler(req, res) {
 
     var vcal = ProcessICAL(data, FilterEventFunc);
     var vcalStr = vcal.toString();
-    SendVCal(res, vcalStr, fileName);
+    SendVCal(res, vcalStr, fileName, remoteResponse.headers);
   });
 }
 
