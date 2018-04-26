@@ -109,10 +109,21 @@ function ProcessICAL(body, onEvent) {
   return vcal;
 }
 
-function SendVCal(response, vcalStr, fileName, remoteHeaders) {
+function SendVCal(response, vcalStr, remoteHeaders) {
   var bytesLen = Buffer.byteLength(vcalStr, 'utf8');
   LogDbg("vcalStr.length="+vcalStr.length+"; bytesLen="+bytesLen);
   
+  var fileName = calendarFileName;
+  var contentHeader = remoteHeaders && remoteHeaders['content-disposition'];
+  if (contentHeader) {
+    const filenamePattern = ';filename=';
+    var n = contentHeader.indexOf(filenamePattern);
+    if (n != -1) {
+      fileName = contentHeader.substring(n + filenamePattern.length);
+      LogDbg('Using the remote file name: ' + fileName);
+    }
+  }
+
   var pragmaValue = remoteHeaders && remoteHeaders['pragma'];
   var cacheControlValue = remoteHeaders && remoteHeaders['cache-control'];
   
@@ -121,7 +132,7 @@ function SendVCal(response, vcalStr, fileName, remoteHeaders) {
     'Pragma': pragmaValue || 'no-cache',
     'Cache-Control': cacheControlValue || 'private, no-cache, no-store, must-revalidate',
     'Content-Type': 'text/calendar;charset=utf-8',
-    'Content-Disposition': 'attachment;filename=' + (fileName || calendarFileName),
+    'Content-Disposition': 'attachment;filename=' + fileName,
     'Content-Length': bytesLen
     }
   );
@@ -243,19 +254,9 @@ function HttpHandler(req, res) {
       return;
     }
 
-    var contentHeader = remoteResponse.headers['content-disposition'];
-    if (contentHeader) {
-      const filenamePattern = ';filename=';
-      var n = contentHeader.indexOf(filenamePattern);
-      if (n != -1) {
-        var fileName = contentHeader.substring(n + filenamePattern.length);
-        LogDbg('Using the remote file name: ' + fileName);
-      }
-    }
-
     var vcal = ProcessICAL(data, FilterEventFunc);
     var vcalStr = vcal.toString();
-    SendVCal(res, vcalStr, fileName, remoteResponse.headers);
+    SendVCal(res, vcalStr, remoteResponse.headers);
   });
 }
 
